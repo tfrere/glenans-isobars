@@ -2,7 +2,9 @@
 FROM node:22-slim AS frontend
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+# `npm install` (not `npm ci`) so platform-specific optional deps
+# (e.g. linux-x64 native bindings) resolve correctly in the build image.
+RUN npm install --no-audit --no-fund
 COPY . .
 RUN npm run build
 
