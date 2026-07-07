@@ -146,7 +146,7 @@ async def get_grid() -> dict:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
-app = FastAPI(title="Glénans Isobars API", version="0.1.0")
+app = FastAPI(title="Glénans Isobars API", version="0.2.0")
 
 
 @app.get("/api/isobars")
