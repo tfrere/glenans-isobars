@@ -393,7 +393,7 @@ export default function IsobarMap({
   // pressure troughs. Project the polylines to screen space and pre-build the
   // symbol paths.
   type FrontDraw = {
-    type: "cold" | "warm" | "occluded" | "trough";
+    type: "cold" | "warm" | "occluded" | "stationary" | "trough";
     line: string;
     symbols: string[];
   };
@@ -453,13 +453,19 @@ export default function IsobarMap({
             const tloc = nextAt - acc;
             const px = x0 + tgx * tloc;
             const py = y0 + tgy * tloc;
-            // Occluded fronts alternate a triangle then a semicircle.
+            // Occluded fronts alternate triangle/semicircle on the same side;
+            // stationary fronts alternate triangle (warm side) and semicircle
+            // (cold side), i.e. on opposite sides of the axis.
             const cold =
-              f.type === "cold" || (f.type === "occluded" && symIdx % 2 === 0);
+              f.type === "cold" ||
+              ((f.type === "occluded" || f.type === "stationary") &&
+                symIdx % 2 === 0);
+            const flip = f.type === "stationary" && symIdx % 2 === 1 ? -1 : 1;
+            const norm: [number, number] = [nx * flip, ny * flip];
             symbols.push(
               cold
-                ? coldSymbol(px, py, tgx, tgy, [nx, ny], SIZE)
-                : warmSymbol(px, py, tgx, tgy, [nx, ny], SIZE),
+                ? coldSymbol(px, py, tgx, tgy, norm, SIZE)
+                : warmSymbol(px, py, tgx, tgy, norm, SIZE),
             );
             symIdx += 1;
             nextAt += SPACING;

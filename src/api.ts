@@ -8,7 +8,7 @@ export interface BBox {
 // A server-detected synoptic feature (objective theta-e / Hewson TFP method for
 // fronts; cyclonic-curvature axes for troughs).
 export interface Front {
-  type: "cold" | "warm" | "occluded" | "trough";
+  type: "cold" | "warm" | "occluded" | "stationary" | "trough";
   points: [number, number][]; // [lon, lat] polyline
   warm?: [number, number]; // unit vector (lon/lat) toward the warm air (fronts only)
 }

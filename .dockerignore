@@ -2,6 +2,7 @@ node_modules
 dist
 server/static
 server/cache
+ingest
 .git
 .venv
 __pycache__

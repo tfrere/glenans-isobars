@@ -15,11 +15,38 @@ import asyncio
 import datetime as dt
 import json
 import os
+import sys
 
 import httpx
 
 import archive_store
 import history
+
+# Fronts backend: "cnn" (DWD FrontDetection on ERA5, the default) or "objective"
+# (the pure-NumPy Hewson TFP fallback baked into history._frame_from_fetch). The
+# heavy CNN package lives in ../ingest and is imported lazily so the Space (which
+# never runs this file) stays torch-free.
+FRONTS_BACKEND = os.environ.get("GLENANS_FRONTS", "cnn")
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "ingest"))
+
+
+def _apply_cnn_fronts(frames_by_date: dict[str, dict], dates: list[str]) -> list[str]:
+    """Replace each frame's fronts with CNN fronts; drop days ERA5 can't cover yet.
+
+    Returns the subset of `dates` that were successfully processed (a day whose
+    ERA5 analysis is not yet published is removed so a later run retries it).
+    """
+    from frontnet import fronts_for_date
+
+    kept: list[str] = []
+    for d in dates:
+        try:
+            frames_by_date[d]["fronts"] = fronts_for_date(d)
+            kept.append(d)
+        except Exception as exc:  # noqa: BLE001
+            print(f"[ingest] skip {d}: {exc}")
+            frames_by_date.pop(d, None)
+    return kept
 
 
 def _seed_from_committed() -> dict | None:
@@ -61,6 +88,11 @@ async def run() -> dict:
                     if d not in frames_by_date:
                         frames_by_date[d] = history._frame_from_fetch(f)
                         added.append(d)
+
+    # Upgrade the freshly fetched days to CNN fronts (default). Days whose ERA5
+    # analysis is not published yet are dropped and retried on a later run.
+    if added and FRONTS_BACKEND == "cnn":
+        added = await asyncio.to_thread(_apply_cnn_fronts, frames_by_date, added)
 
     if added or seeded:
         dates = sorted(frames_by_date)

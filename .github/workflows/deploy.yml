@@ -45,6 +45,9 @@ jobs:
                   ".github/*",
                   "node_modules/*",
                   "dist/*",
+                  # CNN front-detection pipeline is CI-only (torch/ERA5): keep it
+                  # out of the Space image entirely.
+                  "ingest/*",
                   "server/static/*",
                   "server/cache/*",
                   "server/data/_chunks/*",

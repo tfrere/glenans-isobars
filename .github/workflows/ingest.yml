@@ -34,13 +34,16 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install -r server/requirements.txt
+        run: |
+          pip install -r server/requirements.txt
+          pip install -r ingest/requirements.txt
 
-      - name: Ingest recent days
+      - name: Ingest recent days (CNN fronts)
         working-directory: server
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           GLENANS_DATASET: tfrere/glenans-isobars-archive
+          GLENANS_FRONTS: cnn
         run: python ingest.py
 
       # Reset GitHub's 60-day inactivity timer so the schedule never gets

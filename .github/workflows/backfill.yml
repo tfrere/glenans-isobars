@@ -1,0 +1,49 @@
+name: Backfill CNN fronts (one-off)
+
+# Manually-dispatched, resumable backfill that upgrades every archived day's
+# fronts to the DWD FrontDetection CNN (ERA5). It is safe to re-run: days that
+# already carry frontsBackend=="cnn" are skipped, the archive is pushed
+# periodically, and a soft time budget stops the run before the job timeout.
+# Re-dispatch until it reports 0 days remaining.
+
+on:
+  workflow_dispatch:
+    inputs:
+      workers:
+        description: "Concurrent ERA5 fetches"
+        default: "4"
+      max_seconds:
+        description: "Soft time budget before flushing and exiting"
+        default: "18000"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backfill-glenans
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r server/requirements.txt
+          pip install -r ingest/requirements.txt
+
+      - name: Backfill CNN fronts
+        working-directory: ingest
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          GLENANS_DATASET: tfrere/glenans-isobars-archive
+          BACKFILL_WORKERS: ${{ inputs.workers }}
+          BACKFILL_MAX_SECONDS: ${{ inputs.max_seconds }}
+        run: python -u backfill.py
