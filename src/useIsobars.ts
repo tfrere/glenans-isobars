@@ -8,7 +8,7 @@ interface IsobarState {
   reload: () => void;
 }
 
-export function useIsobars(): IsobarState {
+export function useIsobars(enabled = true): IsobarState {
   const [data, setData] = useState<IsobarGrid | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,6 +17,7 @@ export function useIsobars(): IsobarState {
   const reload = useCallback(() => setNonce((n) => n + 1), []);
 
   useEffect(() => {
+    if (!enabled) return;
     const controller = new AbortController();
     setLoading(true);
     setError(null);
@@ -32,7 +33,7 @@ export function useIsobars(): IsobarState {
       });
 
     return () => controller.abort();
-  }, [nonce]);
+  }, [nonce, enabled]);
 
   return { data, loading, error, reload };
 }

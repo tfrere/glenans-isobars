@@ -1,3 +1,11 @@
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
 httpx==0.28.1
+# Pull the persistent (unbounded) history archive from a Hugging Face dataset.
+huggingface_hub>=0.25,<2.0
+# Objective synoptic front detection (theta-e + Hewson TFP).
+# theta-e is computed in pure NumPy (Bolton 1980), so MetPy and its heavy
+# transitive stack (matplotlib, pandas, pyproj, xarray, ...) are not needed.
+numpy==2.1.3
+scipy==1.14.1
+contourpy==1.3.1

@@ -1,0 +1,60 @@
+name: Ingest glénans history
+
+# Keeps the historical archive growing independently of the Space. Each day it
+# appends the newly available ERA5 frame(s) to the Hugging Face dataset. The
+# archive is unbounded in time; the Space trims it to a rolling year for display.
+#
+# A monthly empty keepalive commit prevents GitHub from auto-disabling this
+# scheduled workflow after 60 days of repository inactivity (ingest commits land
+# in the HF dataset, not this repo).
+
+on:
+  schedule:
+    # Daily at 06:23 UTC. The ERA5 archive lags reality by a few days, so exact
+    # timing is not critical; a missed run self-heals (the next run backfills
+    # every day after the archive's newest one).
+    - cron: "23 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ingest-glenans
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r server/requirements.txt
+
+      - name: Ingest recent days
+        working-directory: server
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          GLENANS_DATASET: tfrere/glenans-isobars-archive
+        run: python ingest.py
+
+      # Reset GitHub's 60-day inactivity timer so the schedule never gets
+      # auto-disabled. Once a month is plenty; [skip ci] avoids a pointless
+      # deploy, and it never fails the run.
+      - name: Keepalive (prevent scheduled-workflow auto-disable)
+        if: ${{ always() }}
+        continue-on-error: true
+        run: |
+          if [ "$(date -u +%d)" != "01" ]; then
+            echo "Not the 1st of the month (UTC) - keepalive commit skipped."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --allow-empty -m "chore: keepalive to keep the daily ingest cron enabled [skip ci]"
+          git push

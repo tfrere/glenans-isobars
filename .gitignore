@@ -22,6 +22,8 @@ server/static
 
 # Cached historical timeline (rebuilt on demand)
 server/cache
+# Resumable per-month build cache (transient)
+server/data/_chunks
 
 # Editor directories and files
 .vscode/*

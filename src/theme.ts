@@ -1,21 +1,24 @@
 import { createTheme } from "@mui/material/styles";
 
+// Light, monochrome theme to match the Met Office "Black and White" surface
+// pressure charts: white surfaces, near-black ink, neutral greys.
 export const theme = createTheme({
   palette: {
-    mode: "dark",
+    mode: "light",
     background: {
-      default: "#070a16",
-      paper: "#0f1424",
+      default: "#f4f4f4",
+      paper: "#ffffff",
     },
-    primary: { main: "#7dd3fc" },
+    primary: { main: "#1a1a1a" },
     text: {
-      primary: "#e2e8f0",
-      secondary: "#94a3b8",
+      primary: "#1a1a1a",
+      secondary: "#5f6368",
     },
+    divider: "#d7d7d7",
   },
   typography: {
     fontFamily: 'system-ui, "Segoe UI", Roboto, sans-serif',
     h1: { fontSize: "1.6rem", fontWeight: 700, letterSpacing: "-0.02em" },
   },
-  shape: { borderRadius: 12 },
+  shape: { borderRadius: 8 },
 });

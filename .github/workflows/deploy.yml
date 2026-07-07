@@ -1,0 +1,59 @@
+name: Deploy to Hugging Face Space
+
+# GitHub is the source of truth: every push to main is mirrored to the HF Space
+# via the Hub API (which works from CI, unlike token-in-URL git push). The
+# upload targets huggingface.co, so it never re-triggers this workflow.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-space
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install huggingface_hub
+        run: pip install "huggingface_hub>=0.25,<2.0"
+
+      - name: Deploy to the Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python - <<'PY'
+          import os
+          from huggingface_hub import HfApi
+
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          api.upload_folder(
+              repo_id="tfrere/glenans-isobars",
+              repo_type="space",
+              folder_path=".",
+              commit_message="deploy: sync from GitHub main",
+              ignore_patterns=[
+                  ".git/*",
+                  ".github/*",
+                  "node_modules/*",
+                  "dist/*",
+                  "server/static/*",
+                  "server/cache/*",
+                  "server/data/_chunks/*",
+                  "**/__pycache__/*",
+                  ".venv/*",
+                  "*.pyc",
+              ],
+              # Mirror deletions so the Space matches the repo exactly.
+              delete_patterns=["*"],
+          )
+          print("Space updated from GitHub main")
+          PY

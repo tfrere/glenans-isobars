@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import type { BBox, IsobarGrid } from "./api";
+import type { BBox, Front, IsobarGrid } from "./api";
 
 export interface HistoryFrame {
   values: number[];
   windSpeed: number[];
   windDirection: number[];
+  fronts?: Front[];
 }
 
 export interface HistoryReady {
@@ -99,6 +100,7 @@ export function frameToGrid(h: HistoryReady, idx: number): IsobarGrid {
     values: f.values,
     windSpeed: f.windSpeed,
     windDirection: f.windDirection,
+    fronts: f.fronts,
     min,
     max,
     updatedAt: h.dates[idx],

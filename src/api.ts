@@ -5,6 +5,14 @@ export interface BBox {
   lonMax: number;
 }
 
+// A server-detected synoptic feature (objective theta-e / Hewson TFP method for
+// fronts; cyclonic-curvature axes for troughs).
+export interface Front {
+  type: "cold" | "warm" | "occluded" | "trough";
+  points: [number, number][]; // [lon, lat] polyline
+  warm?: [number, number]; // unit vector (lon/lat) toward the warm air (fronts only)
+}
+
 export interface IsobarGrid {
   bbox: BBox;
   nx: number;
@@ -15,6 +23,7 @@ export interface IsobarGrid {
   values: number[]; // pressure_msl in hPa, row-major (north -> south, west -> east)
   windSpeed: number[]; // knots, same layout as values
   windDirection: number[]; // degrees, direction the wind comes FROM
+  fronts?: Front[]; // objective cold/warm fronts computed server-side
   min: number;
   max: number;
   updatedAt: string;

@@ -4,8 +4,9 @@ from __future__ import annotations
 
 GLENANS = {"name": "Archipel des Glénans", "lat": 47.7186, "lon": -3.9886}
 
-# Wide synoptic window: North Atlantic + Western Europe (UK, France, Iberia).
-BBOX = {"latMin": 40.0, "latMax": 56.0, "lonMin": -20.0, "lonMax": 8.0}
+# Continental synoptic window: whole of Europe, from the mid-Atlantic to
+# western Russia and from North Africa to northern Scandinavia.
+BBOX = {"latMin": 34.0, "latMax": 70.0, "lonMin": -25.0, "lonMax": 40.0}
 
 ISOBAR_STEP = 4  # hPa
 

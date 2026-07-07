@@ -7,6 +7,7 @@ compact JSON payload. Also serves the built Vite frontend as static files.
 
 from __future__ import annotations
 
+import asyncio
 import os
 import time
 from pathlib import Path
@@ -17,16 +18,20 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from geo import BBOX, GLENANS, ISOBAR_STEP, build_grid_points
+from fronts_detect import detect_fronts, detect_troughs
 import history as history_module
 
 # --- Live grid configuration ---
 
-NX = 29  # columns (west -> east)
-NY = 17  # rows (north -> south)
+NX = 35  # columns (west -> east)
+NY = 20  # rows (north -> south)
 
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 MODEL = "ecmwf_ifs025"
 CACHE_TTL_SECONDS = 30 * 60  # refresh at most every 30 minutes
+# Open-Meteo takes coordinate lists in the URL; too many points overflow the
+# server's URI limit (HTTP 414), so we split the grid into batches.
+CHUNK_POINTS = 300
 
 _LATS, _LONS = build_grid_points(NX, NY)
 
@@ -36,40 +41,78 @@ _cache: dict | None = None
 _cache_ts: float = 0.0
 
 
-async def fetch_grid() -> dict:
+async def _fetch_points(
+    client: httpx.AsyncClient,
+    lats: list[float],
+    lons: list[float],
+) -> list[dict]:
     params = {
-        "latitude": ",".join(str(v) for v in _LATS),
-        "longitude": ",".join(str(v) for v in _LONS),
-        "current": "pressure_msl,wind_speed_10m,wind_direction_10m",
+        "latitude": ",".join(str(v) for v in lats),
+        "longitude": ",".join(str(v) for v in lons),
+        # 850 hPa temperature + relative humidity feed the objective frontal
+        # analysis (theta-e / Hewson TFP); the 10 m wind gives the advection sign.
+        "current": (
+            "pressure_msl,wind_speed_10m,wind_direction_10m,"
+            "temperature_850hPa,relative_humidity_850hPa"
+        ),
         "wind_speed_unit": "kn",  # knots, the meteorological standard for barbs
         "models": MODEL,
         "cell_selection": "nearest",
     }
-    async with httpx.AsyncClient(timeout=30) as client:
+    # Retry with exponential backoff on rate limiting (HTTP 429).
+    for attempt in range(4):
         resp = await client.get(OPEN_METEO_URL, params=params)
+        if resp.status_code == 429:
+            await asyncio.sleep(2**attempt)
+            continue
         resp.raise_for_status()
         data = resp.json()
+        return data if isinstance(data, list) else [data]
+    resp.raise_for_status()
+    data = resp.json()
+    return data if isinstance(data, list) else [data]
 
-    points = data if isinstance(data, list) else [data]
+
+async def fetch_grid() -> dict:
+    total = NX * NY
+    spans = [(s, min(s + CHUNK_POINTS, total)) for s in range(0, total, CHUNK_POINTS)]
+    async with httpx.AsyncClient(timeout=30) as client:
+        results = await asyncio.gather(
+            *(_fetch_points(client, _LATS[a:b], _LONS[a:b]) for a, b in spans)
+        )
+    # Concatenate batches back in grid order.
+    points: list[dict] = [p for chunk in results for p in chunk]
+
     values: list[float] = []
     wind_speed: list[float] = []
     wind_dir: list[float] = []
+    temp850: list[float] = []
+    rh850: list[float] = []
     updated_at = ""
+
+    def _num(x: object, default: float = 0.0) -> float:
+        return float(x) if isinstance(x, (int, float)) else default
+
     for p in points:
         current = p.get("current") or {}
         v = current.get("pressure_msl")
-        ws = current.get("wind_speed_10m")
-        wd = current.get("wind_direction_10m")
         if not isinstance(v, (int, float)):
             raise ValueError("Missing pressure_msl in Open-Meteo response")
         values.append(float(v))
-        wind_speed.append(float(ws) if isinstance(ws, (int, float)) else 0.0)
-        wind_dir.append(float(wd) if isinstance(wd, (int, float)) else 0.0)
+        wind_speed.append(_num(current.get("wind_speed_10m")))
+        wind_dir.append(_num(current.get("wind_direction_10m")))
+        temp850.append(_num(current.get("temperature_850hPa")))
+        rh850.append(_num(current.get("relative_humidity_850hPa"), 50.0))
         if not updated_at and current.get("time"):
             updated_at = current["time"]
 
     if len(values) != NX * NY:
         raise ValueError(f"Expected {NX * NY} grid points, got {len(values)}")
+
+    # Objective fronts (theta-e + Hewson TFP) + dashed pressure troughs,
+    # computed server-side so the frontend only renders the resulting geometry.
+    fronts = detect_fronts(temp850, rh850, wind_speed, wind_dir, BBOX, NX, NY)
+    fronts += detect_troughs(values, BBOX, NX, NY)
 
     return {
         "bbox": BBOX,
@@ -81,6 +124,7 @@ async def fetch_grid() -> dict:
         "values": values,
         "windSpeed": wind_speed,  # knots
         "windDirection": wind_dir,  # degrees, direction the wind comes FROM
+        "fronts": fronts,  # objective cold/warm front polylines
         "min": min(values),
         "max": max(values),
         "updatedAt": updated_at,
