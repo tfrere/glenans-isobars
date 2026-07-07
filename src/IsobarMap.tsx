@@ -593,7 +593,7 @@ export default function IsobarMap({
     type P = { x: number; y: number; age: number };
     const COUNT = Math.round((WIDTH * height) / 280);
     const MAX_AGE = 90;
-    const SPEED = 1.0;
+    const SPEED = 0.65;
     // `seed` spreads the initial ages so particles don't pulse in unison; a
     // normal respawn starts at full life so it can fade in smoothly from zero.
     const spawn = (p: P, seed = false) => {
@@ -613,7 +613,7 @@ export default function IsobarMap({
     const tick = () => {
       // Fade toward the paper colour to leave trails (higher alpha = shorter
       // trails). Kept lowish so the slower particles still draw long streaks.
-      ctx.fillStyle = "rgba(255,255,255,0.72)";
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
       ctx.fillRect(0, 0, WIDTH, height);
       ctx.lineWidth = 1.0;
       ctx.lineCap = "round";
