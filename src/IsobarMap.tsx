@@ -916,7 +916,7 @@ export default function IsobarMap({
           fontFamily="system-ui, sans-serif"
           style={{ paintOrder: "stroke", stroke: PAPER, strokeWidth: 3.5 }}
         >
-          Glénans
+          Archipel des Glénans
         </text>
       </g>
       </svg>
