@@ -593,7 +593,7 @@ export default function IsobarMap({
     type P = { x: number; y: number; age: number };
     const COUNT = Math.round((WIDTH * height) / 280);
     const MAX_AGE = 90;
-    const SPEED = 1.7;
+    const SPEED = 1.0;
     // `seed` spreads the initial ages so particles don't pulse in unison; a
     // normal respawn starts at full life so it can fade in smoothly from zero.
     const spawn = (p: P, seed = false) => {
