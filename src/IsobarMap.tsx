@@ -611,9 +611,9 @@ export default function IsobarMap({
     paintPaper();
     let raf = 0;
     const tick = () => {
-      // Fade toward the paper colour to leave short trails (higher alpha =
-      // shorter, subtler trails).
-      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      // Fade toward the paper colour to leave trails (higher alpha = shorter
+      // trails). Kept lowish so the slower particles still draw long streaks.
+      ctx.fillStyle = "rgba(255,255,255,0.72)";
       ctx.fillRect(0, 0, WIDTH, height);
       ctx.lineWidth = 1.0;
       ctx.lineCap = "round";
