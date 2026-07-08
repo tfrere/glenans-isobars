@@ -6,7 +6,6 @@ import {
   IconButton,
   LinearProgress,
   Stack,
-  Switch,
   ToggleButton,
   ToggleButtonGroup,
   Tooltip,
@@ -185,8 +184,6 @@ function InfoRow({ label, value }: { label: string; value: ReactNode }) {
 }
 
 export default function App() {
-  const [showWind, setShowWind] = useState(true);
-  const [showFronts, setShowFronts] = useState(true);
   const [mode, setMode] = useState<"live" | "history">(() =>
     new URLSearchParams(window.location.search).get("mode") === "live"
       ? "live"
@@ -298,7 +295,7 @@ export default function App() {
   return (
     <Box sx={{ position: "fixed", inset: 0, overflow: "hidden", bgcolor: "#fff" }}>
       {grid && (
-        <IsobarMap grid={grid} showWind={showWind} showFronts={showFronts} />
+        <IsobarMap grid={grid} showWind showFronts />
       )}
 
       {/* Loading / error / building states */}
@@ -409,82 +406,48 @@ export default function App() {
         </Box>
       </Overlay>
 
-      {/* Bottom: unified control bar. On desktop the mode toggle, layer
-          switches and span toggle sit on one row; on mobile each group takes
-          a full-width line so nothing wraps awkwardly. The timeline is always
-          its own row below. */}
+      {/* Bottom: unified control bar. Desktop keeps everything on one row with
+          the toggles left-aligned and the timeline filling the rest; mobile
+          stacks each group full-width. */}
       <Overlay sx={{ bottom: 16, left: 16, right: 16 }}>
-        <Stack spacing={1.25} sx={{ ...panelSx, px: 1.5, py: 1.25 }}>
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "stretch", sm: "center" },
-              justifyContent: "space-between",
-              gap: 1.25,
-            }}
+        <Box
+          sx={{
+            ...panelSx,
+            px: 1.5,
+            py: { xs: 1.25, sm: 0.75 },
+            display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
+            alignItems: { xs: "stretch", sm: "center" },
+            gap: { xs: 1.25, sm: 1.5 },
+          }}
+        >
+          <ToggleButtonGroup
+            size="small"
+            exclusive
+            value={mode}
+            onChange={(_, v) => v && setMode(v)}
+            sx={groupSx}
           >
+            <ToggleButton value="history">Historique</ToggleButton>
+            <ToggleButton value="live">Direct</ToggleButton>
+          </ToggleButtonGroup>
+
+          {mode === "history" && hist.status === "ready" && hist.data && (
             <ToggleButtonGroup
               size="small"
               exclusive
-              value={mode}
-              onChange={(_, v) => v && setMode(v)}
+              value={span}
+              onChange={(_, v) => v && setSpan(v as SpanMode)}
               sx={groupSx}
             >
-              <ToggleButton value="history">Historique</ToggleButton>
-              <ToggleButton value="live">Direct</ToggleButton>
+              <ToggleButton value="week">Semaine</ToggleButton>
+              <ToggleButton value="month">Mois</ToggleButton>
+              <ToggleButton value="year">Année</ToggleButton>
             </ToggleButtonGroup>
+          )}
 
-            <Stack
-              direction="row"
-              spacing={2}
-              sx={{
-                alignItems: "center",
-                justifyContent: { xs: "center", sm: "flex-start" },
-              }}
-            >
-              <Tooltip title="Champ de vent">
-                <Stack direction="row" spacing={0.25} sx={{ alignItems: "center" }}>
-                  <Switch
-                    size="small"
-                    checked={showWind}
-                    onChange={(e) => setShowWind(e.target.checked)}
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    Vent
-                  </Typography>
-                </Stack>
-              </Tooltip>
-              <Tooltip title="Fronts">
-                <Stack direction="row" spacing={0.25} sx={{ alignItems: "center" }}>
-                  <Switch
-                    size="small"
-                    checked={showFronts}
-                    onChange={(e) => setShowFronts(e.target.checked)}
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    Fronts
-                  </Typography>
-                </Stack>
-              </Tooltip>
-            </Stack>
-
-            {mode === "history" && hist.status === "ready" && hist.data && (
-              <ToggleButtonGroup
-                size="small"
-                exclusive
-                value={span}
-                onChange={(_, v) => v && setSpan(v as SpanMode)}
-                sx={groupSx}
-              >
-                <ToggleButton value="week">Semaine</ToggleButton>
-                <ToggleButton value="month">Mois</ToggleButton>
-                <ToggleButton value="year">Année</ToggleButton>
-              </ToggleButtonGroup>
-            )}
-          </Box>
           {mode === "history" && hist.status === "ready" && hist.data && (
-            <Box sx={{ width: "100%" }}>
+            <Box sx={{ flexGrow: 1, minWidth: 0, width: { xs: "100%", sm: "auto" } }}>
               <Timeline
                 dates={hist.data.dates}
                 index={Math.min(index, hist.data.dates.length - 1)}
@@ -496,7 +459,7 @@ export default function App() {
               />
             </Box>
           )}
-        </Stack>
+        </Box>
       </Overlay>
     </Box>
   );
