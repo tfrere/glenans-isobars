@@ -61,6 +61,13 @@ const panelSx = {
   boxShadow: "0 6px 24px rgba(0,0,0,0.10)",
 } as const;
 
+// Toggle groups stretch to full width on mobile (equal-width buttons) and stay
+// compact/auto on desktop.
+const groupSx = {
+  width: { xs: "100%", sm: "auto" },
+  "& .MuiToggleButtonGroup-grouped": { flex: { xs: 1, sm: "none" } },
+} as const;
+
 function Overlay({
   children,
   sx,
@@ -402,35 +409,40 @@ export default function App() {
         </Box>
       </Overlay>
 
-      {/* Bottom: unified control bar (mode + layers, and in history mode the
-          span toggle + timeline). Everything wraps on narrow screens. */}
+      {/* Bottom: unified control bar. On desktop the mode toggle, layer
+          switches and span toggle sit on one row; on mobile each group takes
+          a full-width line so nothing wraps awkwardly. The timeline is always
+          its own row below. */}
       <Overlay sx={{ bottom: 16, left: 16, right: 16 }}>
-        <Stack spacing={1} sx={{ ...panelSx, px: 1.5, py: 1 }}>
-          <Stack
-            direction="row"
-            spacing={1}
+        <Stack spacing={1.25} sx={{ ...panelSx, px: 1.5, py: 1.25 }}>
+          <Box
             sx={{
-              alignItems: "center",
-              flexWrap: "wrap",
-              rowGap: 0.75,
+              display: "flex",
+              flexDirection: { xs: "column", sm: "row" },
+              alignItems: { xs: "stretch", sm: "center" },
               justifyContent: "space-between",
+              gap: 1.25,
             }}
           >
+            <ToggleButtonGroup
+              size="small"
+              exclusive
+              value={mode}
+              onChange={(_, v) => v && setMode(v)}
+              sx={groupSx}
+            >
+              <ToggleButton value="history">Historique</ToggleButton>
+              <ToggleButton value="live">Direct</ToggleButton>
+            </ToggleButtonGroup>
+
             <Stack
               direction="row"
-              spacing={1}
-              sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 0.75 }}
+              spacing={2}
+              sx={{
+                alignItems: "center",
+                justifyContent: { xs: "center", sm: "flex-start" },
+              }}
             >
-              <ToggleButtonGroup
-                size="small"
-                exclusive
-                value={mode}
-                onChange={(_, v) => v && setMode(v)}
-              >
-                <ToggleButton value="history">Historique</ToggleButton>
-                <ToggleButton value="live">Direct</ToggleButton>
-              </ToggleButtonGroup>
-              <Divider orientation="vertical" flexItem />
               <Tooltip title="Champ de vent">
                 <Stack direction="row" spacing={0.25} sx={{ alignItems: "center" }}>
                   <Switch
@@ -456,19 +468,21 @@ export default function App() {
                 </Stack>
               </Tooltip>
             </Stack>
+
             {mode === "history" && hist.status === "ready" && hist.data && (
               <ToggleButtonGroup
                 size="small"
                 exclusive
                 value={span}
                 onChange={(_, v) => v && setSpan(v as SpanMode)}
+                sx={groupSx}
               >
                 <ToggleButton value="week">Semaine</ToggleButton>
                 <ToggleButton value="month">Mois</ToggleButton>
                 <ToggleButton value="year">Année</ToggleButton>
               </ToggleButtonGroup>
             )}
-          </Stack>
+          </Box>
           {mode === "history" && hist.status === "ready" && hist.data && (
             <Box sx={{ width: "100%" }}>
               <Timeline
