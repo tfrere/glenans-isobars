@@ -337,10 +337,10 @@ export default function App() {
         </StatusOverlay>
       )}
 
-      {/* Top-left: title + live readout at the Glénans. Fixed width so the card
-          doesn't resize as the date / readout content changes. */}
-      <Overlay sx={{ top: 16, left: 16, width: 300 }}>
-        <Box sx={{ ...panelSx, px: 1.75, py: 1.25 }}>
+      {/* Top-left: title + live readout at the Glénans. Fixed width on desktop
+          so it doesn't resize with content; caps at the viewport on mobile. */}
+      <Overlay sx={{ top: 16, left: 16, right: 16 }}>
+        <Box sx={{ ...panelSx, px: 1.75, py: 1.25, width: 300, maxWidth: "100%" }}>
           <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
             <AirIcon sx={{ fontSize: 22, color: "text.primary" }} />
             <Box sx={{ flexGrow: 1 }}>
@@ -402,69 +402,75 @@ export default function App() {
         </Box>
       </Overlay>
 
-      {/* Top-right: mode + layer toggles + refresh */}
-      <Overlay sx={{ top: 16, right: 16 }}>
-        <Stack
-          direction="row"
-          spacing={1}
-          sx={{ ...panelSx, px: 1, py: 0.75, alignItems: "center" }}
-        >
-          <ToggleButtonGroup
-            size="small"
-            exclusive
-            value={mode}
-            onChange={(_, v) => v && setMode(v)}
-          >
-            <ToggleButton value="history">Historique</ToggleButton>
-            <ToggleButton value="live">Direct</ToggleButton>
-          </ToggleButtonGroup>
-          <Divider orientation="vertical" flexItem />
-          <Tooltip title="Champ de vent">
-            <Stack direction="row" spacing={0.25} sx={{ alignItems: "center" }}>
-              <Switch
-                size="small"
-                checked={showWind}
-                onChange={(e) => setShowWind(e.target.checked)}
-              />
-              <Typography variant="caption" color="text.secondary">
-                Vent
-              </Typography>
-            </Stack>
-          </Tooltip>
-          <Tooltip title="Fronts">
-            <Stack direction="row" spacing={0.25} sx={{ alignItems: "center" }}>
-              <Switch
-                size="small"
-                checked={showFronts}
-                onChange={(e) => setShowFronts(e.target.checked)}
-              />
-              <Typography variant="caption" color="text.secondary">
-                Fronts
-              </Typography>
-            </Stack>
-          </Tooltip>
-        </Stack>
-      </Overlay>
-
-      {/* Bottom: timeline scrubber (history only) */}
-      {mode === "history" && hist.status === "ready" && hist.data && (
-        <Overlay sx={{ bottom: 16, left: 16, right: 16 }}>
+      {/* Bottom: unified control bar (mode + layers, and in history mode the
+          span toggle + timeline). Everything wraps on narrow screens. */}
+      <Overlay sx={{ bottom: 16, left: 16, right: 16 }}>
+        <Stack spacing={1} sx={{ ...panelSx, px: 1.5, py: 1 }}>
           <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={1.25}
-            sx={{ ...panelSx, px: 1.5, py: 1, alignItems: { sm: "center" } }}
+            direction="row"
+            spacing={1}
+            sx={{
+              alignItems: "center",
+              flexWrap: "wrap",
+              rowGap: 0.75,
+              justifyContent: "space-between",
+            }}
           >
-            <ToggleButtonGroup
-              size="small"
-              exclusive
-              value={span}
-              onChange={(_, v) => v && setSpan(v as SpanMode)}
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 0.75 }}
             >
-              <ToggleButton value="week">Semaine</ToggleButton>
-              <ToggleButton value="month">Mois</ToggleButton>
-              <ToggleButton value="year">Année</ToggleButton>
-            </ToggleButtonGroup>
-            <Box sx={{ flexGrow: 1, width: "100%" }}>
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={mode}
+                onChange={(_, v) => v && setMode(v)}
+              >
+                <ToggleButton value="history">Historique</ToggleButton>
+                <ToggleButton value="live">Direct</ToggleButton>
+              </ToggleButtonGroup>
+              <Divider orientation="vertical" flexItem />
+              <Tooltip title="Champ de vent">
+                <Stack direction="row" spacing={0.25} sx={{ alignItems: "center" }}>
+                  <Switch
+                    size="small"
+                    checked={showWind}
+                    onChange={(e) => setShowWind(e.target.checked)}
+                  />
+                  <Typography variant="caption" color="text.secondary">
+                    Vent
+                  </Typography>
+                </Stack>
+              </Tooltip>
+              <Tooltip title="Fronts">
+                <Stack direction="row" spacing={0.25} sx={{ alignItems: "center" }}>
+                  <Switch
+                    size="small"
+                    checked={showFronts}
+                    onChange={(e) => setShowFronts(e.target.checked)}
+                  />
+                  <Typography variant="caption" color="text.secondary">
+                    Fronts
+                  </Typography>
+                </Stack>
+              </Tooltip>
+            </Stack>
+            {mode === "history" && hist.status === "ready" && hist.data && (
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={span}
+                onChange={(_, v) => v && setSpan(v as SpanMode)}
+              >
+                <ToggleButton value="week">Semaine</ToggleButton>
+                <ToggleButton value="month">Mois</ToggleButton>
+                <ToggleButton value="year">Année</ToggleButton>
+              </ToggleButtonGroup>
+            )}
+          </Stack>
+          {mode === "history" && hist.status === "ready" && hist.data && (
+            <Box sx={{ width: "100%" }}>
               <Timeline
                 dates={hist.data.dates}
                 index={Math.min(index, hist.data.dates.length - 1)}
@@ -475,9 +481,9 @@ export default function App() {
                 onStop={() => setPlaying(false)}
               />
             </Box>
-          </Stack>
-        </Overlay>
-      )}
+          )}
+        </Stack>
+      </Overlay>
     </Box>
   );
 }

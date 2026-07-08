@@ -8,7 +8,10 @@ export default defineConfig({
     port: 5173, // reserved dev port (unique per project)
     // In dev, proxy API calls to the FastAPI backend (python server/app.py).
     proxy: {
-      "/api": "http://127.0.0.1:7860",
+      "/api": {
+        target: "http://127.0.0.1:7860",
+        changeOrigin: true,
+      },
     },
   },
 });
