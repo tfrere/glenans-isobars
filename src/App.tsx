@@ -184,6 +184,9 @@ function InfoRow({ label, value }: { label: string; value: ReactNode }) {
 }
 
 export default function App() {
+  // Wind field and fronts are always drawn; the toggles were removed.
+  const showWind = true;
+  const showFronts = true;
   const [mode, setMode] = useState<"live" | "history">(() =>
     new URLSearchParams(window.location.search).get("mode") === "live"
       ? "live"
@@ -295,7 +298,7 @@ export default function App() {
   return (
     <Box sx={{ position: "fixed", inset: 0, overflow: "hidden", bgcolor: "#fff" }}>
       {grid && (
-        <IsobarMap grid={grid} showWind showFronts />
+        <IsobarMap grid={grid} showWind={showWind} showFronts={showFronts} />
       )}
 
       {/* Loading / error / building states */}
@@ -406,19 +409,19 @@ export default function App() {
         </Box>
       </Overlay>
 
-      {/* Bottom: unified control bar. Desktop keeps everything on one row with
-          the toggles left-aligned and the timeline filling the rest; mobile
-          stacks each group full-width. */}
+      {/* Bottom: unified control bar. On desktop the mode + span toggles sit
+          inline on the left and the timeline fills the rest of the same row;
+          on mobile everything stacks into full-width rows. */}
       <Overlay sx={{ bottom: 16, left: 16, right: 16 }}>
         <Box
           sx={{
             ...panelSx,
             px: 1.5,
-            py: { xs: 1.25, sm: 0.75 },
+            py: 1.25,
             display: "flex",
             flexDirection: { xs: "column", sm: "row" },
             alignItems: { xs: "stretch", sm: "center" },
-            gap: { xs: 1.25, sm: 1.5 },
+            gap: 1.5,
           }}
         >
           <ToggleButtonGroup
@@ -433,31 +436,30 @@ export default function App() {
           </ToggleButtonGroup>
 
           {mode === "history" && hist.status === "ready" && hist.data && (
-            <ToggleButtonGroup
-              size="small"
-              exclusive
-              value={span}
-              onChange={(_, v) => v && setSpan(v as SpanMode)}
-              sx={groupSx}
-            >
-              <ToggleButton value="week">Semaine</ToggleButton>
-              <ToggleButton value="month">Mois</ToggleButton>
-              <ToggleButton value="year">Année</ToggleButton>
-            </ToggleButtonGroup>
-          )}
-
-          {mode === "history" && hist.status === "ready" && hist.data && (
-            <Box sx={{ flexGrow: 1, minWidth: 0, width: { xs: "100%", sm: "auto" } }}>
-              <Timeline
-                dates={hist.data.dates}
-                index={Math.min(index, hist.data.dates.length - 1)}
-                span={span}
-                playing={playing}
-                onIndexChange={setIndex}
-                onPlayToggle={() => setPlaying((p) => !p)}
-                onStop={() => setPlaying(false)}
-              />
-            </Box>
+            <>
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={span}
+                onChange={(_, v) => v && setSpan(v as SpanMode)}
+                sx={groupSx}
+              >
+                <ToggleButton value="week">Semaine</ToggleButton>
+                <ToggleButton value="month">Mois</ToggleButton>
+                <ToggleButton value="year">Année</ToggleButton>
+              </ToggleButtonGroup>
+              <Box sx={{ flexGrow: 1, width: "100%", minWidth: 0 }}>
+                <Timeline
+                  dates={hist.data.dates}
+                  index={Math.min(index, hist.data.dates.length - 1)}
+                  span={span}
+                  playing={playing}
+                  onIndexChange={setIndex}
+                  onPlayToggle={() => setPlaying((p) => !p)}
+                  onStop={() => setPlaying(false)}
+                />
+              </Box>
+            </>
           )}
         </Box>
       </Overlay>
